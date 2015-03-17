@@ -1,0 +1,66 @@
+#!/usr/bin/python
+
+import sys, argparse
+import gdata.photos, gdata.photos.service
+
+ALBUM_NAME='Test Album'
+IMAGE_FILENAME='img.jpg'
+
+class PicasaUploader:
+
+    def __init__(self, pws):
+        self.pws = pws
+     
+    def getAlbums(self):
+
+        #Get all albums
+        albums = self.pws.GetUserFeed().entry
+
+        for album in albums:
+            print 'Found album %s! It has %d pictures in it' % (album.title.text, int(album.numphotos.text))
+
+    def createAlbum(self, name):
+        return self.pws.InsertAlbum(title='New Album', summary="",access='private')
+
+    def getOrCreateAlbum(self, name):
+        result = next((album for album in self.pws.GetUserFeed().entry if album.title.text == name), None)
+    
+        if (result == None):
+            result = self.createAlbum(name)
+
+        return result
+
+    def showOurAlbum(self):
+        ourAlbum = self.getOrCreateAlbum(ALBUM_NAME)
+
+        print 'Found our album %s! It has %d pictures in it' % (ourAlbum.title.text, int(ourAlbum.numphotos.text))
+
+    def uploadTestPhoto(self):
+        album = self.getOrCreateAlbum(ALBUM_NAME)
+        self.pws.InsertPhotoSimple(album_or_uri=album, filename_or_handle=IMAGE_FILENAME, title=IMAGE_FILENAME, summary='')
+
+    def deleteTestAlbum(self):
+        album = self.getOrCreateAlbum(ALBUM_NAME)
+        photos = self.pws.GetFeed(album.GetPhotosUri()).entry
+
+        for photo in photos:
+            self.pws.Delete(photo)
+
+        self.pws.Delete(album)
+
+def main(argv):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-u", "--username", required=True, help="Picasa Username")
+    parser.add_argument("-p", "--password", required=True, help="Picasa Password")
+    parser.add_argument('files', nargs=argparse.REMAINDER)
+    args = parser.parse_args()
+
+    pws = gdata.photos.service.PhotosService()
+    pws.ClientLogin(args.username, args.password)
+
+    picup = PicasaUploader(pws)
+
+    picup.deleteTestAlbum()
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
