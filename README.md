@@ -18,3 +18,14 @@ This should probably install itself and all its dependencies, but for now you ha
 
     pip install gdata
 
+## Google Account Settings
+
+**WARNING**: This application requires you to allow less secure applications to access your Google+ account.  Therefore make sure you have a good, strong password.
+
+To give access to less secure applications:
+
+1. Got to [Google Account Settings](https://myaccount.google.com/)
+2. Click on the setting `Access for less secure apps`
+3. Change the setting to `Allowed`.
+
+Obviously I'll change the application to not require this as soon as I work out how.
