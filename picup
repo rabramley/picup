@@ -1,10 +1,11 @@
 #!/usr/bin/python
 
-import sys, argparse
+import sys, argparse, os, pickle
 import gdata.photos, gdata.photos.service
 
 ALBUM_NAME='Test Album'
 IMAGE_FILENAME='img.jpg'
+ALBUM_NAME='Test Album'
 
 class PicasaUploader:
 
@@ -48,19 +49,59 @@ class PicasaUploader:
 
         self.pws.Delete(album)
 
+    def recurseDirectory(self, directory, donefiles):
+        for root, dirs, files in os.walk(directory, topdown=False):
+            for name in files:
+                print name
+                donefiles.append(name)
+
+        return donefiles
+
+class FileProcessor:
+
+    def __init__(self, directoryPath, donefilePath, uploader):
+        self.directoryPath = directoryPath
+        self.donefilePath = donefilePath
+        self.uploader = uploader
+
+    def process(self):
+        donefiles = self.__getDoneFiles()
+
+        for root, dirs, files in os.walk(self.directoryPath, topdown=False):
+            for name in files:
+                print name
+                donefiles.append(name)
+
+        self.__saveDoneFiles(donefiles)
+
+    def __getDoneFiles(self):
+        if (os.path.exists(self.donefilePath)):
+            with open(self.donefilePath, 'r') as donefile:
+                donefile.seek(0)
+                return pickle.load(donefile)
+        else:
+            return []
+
+    def __saveDoneFiles(self, donefiles):
+        with open(self.donefilePath, 'w') as donefile:
+            pickle.dump(donefiles, donefile)
+
 def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("-u", "--username", required=True, help="Picasa Username")
     parser.add_argument("-p", "--password", required=True, help="Picasa Password")
-    parser.add_argument('files', nargs=argparse.REMAINDER)
+    parser.add_argument("-d", "--donefile", required=True, help="Path to done file")
+    parser.add_argument('directory')
     args = parser.parse_args()
 
     pws = gdata.photos.service.PhotosService()
     pws.ClientLogin(args.username, args.password)
 
     picup = PicasaUploader(pws)
+    fileProcessor = FileProcessor(args.directory, args.donefile, picup)
+    fileProcessor.process()
 
-    picup.deleteTestAlbum()
+    #picup.deleteTestAlbum()
 
 if __name__ == "__main__":
     main(sys.argv[1:])
